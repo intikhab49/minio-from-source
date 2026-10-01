@@ -15,6 +15,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# One publish at a time per branch: overlapping pushes to main must not race
+# each other to the same image tags. PR runs never publish, so they can cancel.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   packages: write
