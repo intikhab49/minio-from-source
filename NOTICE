@@ -1,0 +1,17 @@
+minio-from-source
+=================
+
+The container images built from this repository contain two programs that are
+NOT covered by this repository's MIT license:
+
+  MinIO server  https://github.com/minio/minio  GNU AGPL-3.0
+  mc            https://github.com/minio/mc     GNU AGPL-3.0
+
+Each image is built, unmodified, from the exact upstream commit recorded in the
+image labels (io.github.minio-from-source.minio-commit and
+io.github.minio-from-source.mc-commit) and in README.md. The complete
+corresponding source for every image is that commit in the upstream repository
+above. Their license texts are at LICENSE in each upstream repository.
+
+"MinIO" is a trademark of MinIO, Inc. This project is unofficial and is not
+affiliated with or endorsed by MinIO, Inc.
