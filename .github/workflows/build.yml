@@ -69,7 +69,7 @@ jobs:
       # Publish only from main of the public repository, never from PRs or forks.
       - name: Log in to GHCR
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && !github.event.repository.private
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
