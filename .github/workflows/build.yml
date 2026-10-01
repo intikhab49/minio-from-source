@@ -41,7 +41,7 @@ jobs:
             minio_commit: 07c3a429bfed433e49018cb0f78a52145d4bedeb
             latest: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The Go build cross-compiles; QEMU only runs the small runtime stage
       # (apk add) for arm64.
