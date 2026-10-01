@@ -23,14 +23,19 @@ done
 curl -fsS "http://127.0.0.1:$port/minio/health/live" >/dev/null || {
   docker logs "$name"; echo "FAIL: server never became healthy" >&2; exit 1; }
 
-version=$(docker exec "$name" minio --version | head -1)
+# Whole output first, then the first line: `| head -1` under pipefail can
+# SIGPIPE the writer (exit 141) depending on timing.
+out=$(docker exec "$name" minio --version)
+IFS= read -r version <<<"$out"
 echo "$version"
 # Exactly "minio version RELEASE.<tag> (commit-id=...)": a doubled date means
 # the build leaked MINIO_RELEASE into the version prefix.
 if [[ "$version" != "minio version $tag (commit-id="* ]]; then
   echo "FAIL: unexpected version string" >&2; exit 1
 fi
-docker exec "$name" mc --version | head -1
+out=$(docker exec "$name" mc --version)
+IFS= read -r mc_version <<<"$out"
+echo "$mc_version"
 
 docker exec "$name" sh -euc '
   mc alias set local http://localhost:9000 smoketest smoketest-password >/dev/null
