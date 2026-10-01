@@ -8,7 +8,7 @@
 
 # Go cross-compiles, so the build stage always runs on the builder's own
 # architecture and targets TARGETOS/TARGETARCH. No QEMU needed for arm64.
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
 
 RUN apk add --no-cache git
 
