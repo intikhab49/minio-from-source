@@ -31,7 +31,7 @@ COPY --chmod=0755 scripts/build-component.sh /usr/local/bin/build-component
 RUN build-component minio "$MINIO_TAG" "$MINIO_COMMIT" /out/minio
 RUN build-component mc "$MC_TAG" "$MC_COMMIT" /out/mc
 
-FROM alpine:3.20
+FROM alpine:3.24
 
 # curl backs health checks; the shell lets one container run mc commands.
 RUN apk add --no-cache ca-certificates curl \
