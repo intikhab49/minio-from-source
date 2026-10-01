@@ -48,9 +48,7 @@ The source is still public (AGPL-3.0). This repo builds it for you, at an exact 
 
 ## Quick start
 
-<table>
-<tr><td><b>docker run</b></td></tr>
-<tr><td>
+### docker run
 
 ```bash
 docker run -d --name minio -p 9000:9000 -p 9001:9001 \
@@ -59,9 +57,9 @@ docker run -d --name minio -p 9000:9000 -p 9001:9001 \
   ghcr.io/intikhab49/minio-from-source:RELEASE.2025-10-15T17-29-55Z
 ```
 
-</td></tr>
-<tr><td><b>docker compose</b> (replace your old <code>minio/minio</code> or <code>quay.io/minio/minio</code> line)</td></tr>
-<tr><td>
+### docker compose
+
+Replace your old `minio/minio` or `quay.io/minio/minio` line:
 
 ```yaml
 services:
@@ -81,9 +79,7 @@ volumes:
   minio_data:
 ```
 
-</td></tr>
-<tr><td><b>GitHub Actions</b></td></tr>
-<tr><td>
+### GitHub Actions
 
 ```yaml
 - name: Start MinIO
@@ -94,18 +90,15 @@ volumes:
     until curl -fsS http://localhost:9000/minio/health/live; do sleep 1; done
 ```
 
-</td></tr>
-<tr><td><b>Buckets with <code>mc</code></b> (it's in the same image, no second image needed)</td></tr>
-<tr><td>
+### Create buckets with `mc`
+
+`mc` is in the same image, so no second image is needed:
 
 ```bash
 docker exec minio sh -c '
   mc alias set local http://localhost:9000 admin change-me-please &&
   mc mb --ignore-existing --with-lock local/my-bucket'
 ```
-
-</td></tr>
-</table>
 
 > [!NOTE]
 > **Reusing a data volume from the old official image?** Those images ran as root, so the files are root-owned. This image runs as the non-root `minio` user. Either run it as root for that volume (`user: "0:0"` in compose, `--user 0` with `docker run`) or `chown -R` the volume once.
@@ -129,16 +122,9 @@ docker inspect ghcr.io/intikhab49/minio-from-source:latest \
 
 ## How each image is built and verified
 
-```mermaid
-flowchart LR
-    T["Release tag<br/>RELEASE.2025-10-15T17-29-55Z"] --> C{"Tag still points<br/>at the pinned commit?"}
-    C -- no --> X["Build fails"]
-    C -- yes --> B["go build<br/>CGO off, cross-compiled<br/>amd64 + arm64"]
-    B --> I["alpine image<br/>minio + mc, non-root"]
-    I --> S["Smoke test"]
-    S -- fail --> X
-    S -- pass --> P["Publish to ghcr.io<br/>+ provenance + SBOM"]
-```
+<p align="center">
+  <img src=".github/assets/build-flow.png" alt="Build and verify flow: release tag, commit check (else the build stops), go build for amd64 and arm64, alpine image with minio and mc, smoke test (else nothing is published), publish to ghcr.io with provenance and SBOM" width="100%">
+</p>
 
 The smoke test runs against every release before anything is published:
 
