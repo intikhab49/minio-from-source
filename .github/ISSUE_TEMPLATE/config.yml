@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bug in MinIO itself
+    url: https://github.com/minio/minio/issues
+    about: If upstream MinIO built from the same commit behaves the same way, report it there.
+  - name: Security vulnerability in this repo's build
+    url: https://github.com/intikhab49/minio-from-source/security/advisories/new
+    about: Please report privately, see SECURITY.md.

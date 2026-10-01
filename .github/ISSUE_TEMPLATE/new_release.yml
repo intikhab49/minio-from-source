@@ -1,0 +1,27 @@
+name: Add a MinIO release
+description: Ask for (or offer) an image for another upstream MinIO / mc release.
+labels: [new-release]
+body:
+  - type: input
+    id: release
+    attributes:
+      label: Release tag
+      placeholder: RELEASE.2025-10-15T17-29-55Z
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit (from scripts/resolve-release.sh, if you ran it)
+      placeholder: 9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this release
+      description: Security fix, a feature you need, matching production, ...
+  - type: checkboxes
+    id: pr
+    attributes:
+      label: Contribution
+      options:
+        - label: I can open the PR (matrix row + README table)

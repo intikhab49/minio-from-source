@@ -3,6 +3,15 @@ name: build
 on:
   push:
     branches: [main]
+    # docs, templates and the banner don't change the image; don't republish
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - 'NOTICE'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/assets/**'
+      - '.github/dependabot.yml'
   pull_request:
   workflow_dispatch:
 

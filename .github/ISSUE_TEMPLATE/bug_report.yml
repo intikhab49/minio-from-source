@@ -1,0 +1,43 @@
+name: Bug report
+description: The image fails to build, start, or behave like upstream MinIO.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. If this is a bug in **MinIO itself** (the same behaviour happens with upstream MinIO built from the same commit), please report it to https://github.com/minio/minio instead. This repo only builds and packages it.
+  - type: input
+    id: tag
+    attributes:
+      label: Image tag
+      description: The exact tag you pulled.
+      placeholder: ghcr.io/intikhab49/minio-from-source:RELEASE.2025-10-15T17-29-55Z
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [linux/amd64, linux/arm64, other]
+    validations:
+      required: true
+  - type: textarea
+    id: run
+    attributes:
+      label: How you run it
+      description: docker run command or the compose service (remove secrets).
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `docker logs <container>` and `docker exec <container> minio --version`.
+      render: text
