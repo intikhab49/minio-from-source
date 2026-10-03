@@ -1,0 +1,74 @@
+name: action-test
+
+# Runs the repo's own GitHub Action (action.yml) against the published images.
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - .github/workflows/action-test.yml
+  pull_request:
+    paths:
+      - action.yml
+      - .github/workflows/action-test.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: latest
+            object-lock: 'false'
+          - version: RELEASE.2025-09-07T16-13-09Z
+            object-lock: 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: minio
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+          buckets: uploads, reports
+          object-lock: ${{ matrix.object-lock }}
+      - name: Round-trip a file with the AWS CLI
+        env:
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_DEFAULT_REGION: us-east-1
+          ENDPOINT: ${{ steps.minio.outputs.endpoint }}
+        run: |
+          set -euo pipefail
+          echo "hello from the action" > hello.txt
+          aws --endpoint-url "$ENDPOINT" s3 cp hello.txt s3://uploads/hello.txt
+          aws --endpoint-url "$ENDPOINT" s3 cp s3://uploads/hello.txt back.txt
+          cmp hello.txt back.txt
+          aws --endpoint-url "$ENDPOINT" s3 ls s3://reports
+      - name: Object lock only when asked
+        env:
+          AWS_ACCESS_KEY_ID: minioadmin
+          AWS_SECRET_ACCESS_KEY: minioadmin
+          AWS_DEFAULT_REGION: us-east-1
+          ENDPOINT: ${{ steps.minio.outputs.endpoint }}
+          WANT: ${{ matrix.object-lock }}
+        run: |
+          set -euo pipefail
+          if aws --endpoint-url "$ENDPOINT" s3api get-object-lock-configuration --bucket uploads >/dev/null 2>&1; then
+            got=true
+          else
+            got=false
+          fi
+          echo "object lock on uploads: $got (want $WANT)"
+          test "$got" = "$WANT"
+      - name: Outputs are set
+        env:
+          CONSOLE: ${{ steps.minio.outputs.console }}
+          CONTAINER: ${{ steps.minio.outputs.container }}
+        run: |
+          test "$CONSOLE" = "http://127.0.0.1:9001"
+          test "$CONTAINER" = "minio"
+          docker inspect -f '{{.State.Running}}' "$CONTAINER" | grep -qx true

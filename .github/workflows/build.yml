@@ -12,6 +12,8 @@ on:
       - '.github/PULL_REQUEST_TEMPLATE.md'
       - '.github/assets/**'
       - '.github/dependabot.yml'
+      - 'action.yml'
+      - '.github/workflows/action-test.yml'
   pull_request:
   workflow_dispatch:
 

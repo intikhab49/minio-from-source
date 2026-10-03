@@ -1,0 +1,111 @@
+name: MinIO from source
+description: "Start an S3-compatible MinIO server in CI from a pinned, from-source image on GHCR, with buckets ready. Unofficial."
+author: intikhab49
+branding:
+  icon: database
+  color: red
+inputs:
+  version:
+    description: Image tag to run, for example RELEASE.2025-10-15T17-29-55Z. Pin one for reproducible builds.
+    required: false
+    default: latest
+  port:
+    description: Host port for the S3 API.
+    required: false
+    default: '9000'
+  console-port:
+    description: Host port for the web console.
+    required: false
+    default: '9001'
+  root-user:
+    description: Root user, which is also the access key.
+    required: false
+    default: minioadmin
+  root-password:
+    description: Root password, which is also the secret key. At least 8 characters.
+    required: false
+    default: minioadmin
+  buckets:
+    description: Buckets to create once the server is healthy, separated by spaces or commas.
+    required: false
+    default: ''
+  object-lock:
+    description: '"true" creates the buckets with object locking, which also turns on versioning.'
+    required: false
+    default: 'false'
+  container-name:
+    description: Name of the Docker container, for docker logs or docker exec in later steps.
+    required: false
+    default: minio
+outputs:
+  endpoint:
+    description: S3 API endpoint, for example http://127.0.0.1:9000
+    value: ${{ steps.start.outputs.endpoint }}
+  console:
+    description: Web console URL.
+    value: ${{ steps.start.outputs.console }}
+  container:
+    description: Name of the running container.
+    value: ${{ steps.start.outputs.container }}
+runs:
+  using: composite
+  steps:
+    - id: start
+      name: Start MinIO
+      shell: bash
+      env:
+        MFS_VERSION: ${{ inputs.version }}
+        MFS_PORT: ${{ inputs.port }}
+        MFS_CONSOLE_PORT: ${{ inputs.console-port }}
+        MFS_USER: ${{ inputs.root-user }}
+        MFS_PASSWORD: ${{ inputs.root-password }}
+        MFS_BUCKETS: ${{ inputs.buckets }}
+        MFS_LOCK: ${{ inputs.object-lock }}
+        MFS_NAME: ${{ inputs.container-name }}
+      run: |
+        set -euo pipefail
+        if [ "$RUNNER_OS" != "Linux" ]; then
+          echo "::error::minio-from-source needs a Linux runner with Docker, for example ubuntu-latest."
+          exit 1
+        fi
+        if [ "${#MFS_PASSWORD}" -lt 8 ]; then
+          echo "::error::root-password must be at least 8 characters; MinIO refuses shorter ones."
+          exit 1
+        fi
+        echo "::add-mask::$MFS_PASSWORD"
+        image="ghcr.io/intikhab49/minio-from-source:$MFS_VERSION"
+        docker pull --quiet "$image" >/dev/null
+        docker run -d --name "$MFS_NAME" \
+          -p "$MFS_PORT:9000" -p "$MFS_CONSOLE_PORT:9001" \
+          -e MINIO_ROOT_USER="$MFS_USER" -e MINIO_ROOT_PASSWORD="$MFS_PASSWORD" \
+          "$image" >/dev/null
+        endpoint="http://127.0.0.1:$MFS_PORT"
+        for _ in $(seq 1 60); do
+          curl -fsS "$endpoint/minio/health/live" >/dev/null 2>&1 && break
+          sleep 1
+        done
+        if ! curl -fsS "$endpoint/minio/health/live" >/dev/null 2>&1; then
+          docker logs "$MFS_NAME" || true
+          echo "::error::MinIO did not become healthy within 60 seconds."
+          exit 1
+        fi
+        out=$(docker exec "$MFS_NAME" minio --version)
+        IFS= read -r version <<<"$out"
+        echo "$version is up at $endpoint"
+        buckets=$(printf '%s' "$MFS_BUCKETS" | tr ',' ' ')
+        if [ -n "${buckets// /}" ]; then
+          docker exec -e U="$MFS_USER" -e P="$MFS_PASSWORD" "$MFS_NAME" \
+            sh -euc 'mc alias set local http://localhost:9000 "$U" "$P" >/dev/null'
+          lock=()
+          if [ "$MFS_LOCK" = "true" ]; then
+            lock=(--with-lock)
+          fi
+          for b in $buckets; do
+            docker exec "$MFS_NAME" mc mb --ignore-existing "${lock[@]}" "local/$b"
+          done
+        fi
+        {
+          echo "endpoint=$endpoint"
+          echo "console=http://127.0.0.1:$MFS_CONSOLE_PORT"
+          echo "container=$MFS_NAME"
+        } >> "$GITHUB_OUTPUT"

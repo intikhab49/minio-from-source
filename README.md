@@ -81,6 +81,35 @@ volumes:
 
 ### GitHub Actions
 
+This repo is also a GitHub Action. It starts the server, waits until it is healthy, creates your buckets and hands you the endpoint:
+
+```yaml
+- uses: intikhab49/minio-from-source@v1
+  id: minio
+  with:
+    version: RELEASE.2025-10-15T17-29-55Z   # or latest
+    buckets: uploads, reports               # optional
+    # object-lock: true                     # create the buckets with object locking
+- run: npm test
+  env:
+    S3_ENDPOINT: ${{ steps.minio.outputs.endpoint }}   # http://127.0.0.1:9000
+    AWS_ACCESS_KEY_ID: minioadmin
+    AWS_SECRET_ACCESS_KEY: minioadmin
+```
+
+| Input | Default | What it does |
+| --- | --- | --- |
+| `version` | `latest` | Image tag to run. Pin a `RELEASE.*` tag for reproducible builds |
+| `port` / `console-port` | `9000` / `9001` | Host ports for the S3 API and the web console |
+| `root-user` / `root-password` | `minioadmin` / `minioadmin` | Credentials, which are also the access and secret key |
+| `buckets` | none | Buckets to create, separated by spaces or commas |
+| `object-lock` | `false` | `true` creates the buckets with object locking (and versioning) |
+| `container-name` | `minio` | For `docker logs` or `docker exec` in later steps |
+
+Outputs: `endpoint`, `console` and `container`. Linux runners only, since it runs a Docker container.
+
+Or start it yourself:
+
 ```yaml
 - name: Start MinIO
   run: |
